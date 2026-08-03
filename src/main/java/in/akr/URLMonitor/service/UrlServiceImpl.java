@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class UrlServiceImpl implements UrlService{
@@ -28,5 +30,10 @@ public class UrlServiceImpl implements UrlService{
         urlRepository.save(url);
 
         return urlMapper.toResponse(url);
+    }
+
+    @Override
+    public List<UrlResponseDTO> getAllUrls() {
+        return urlRepository.findAll().stream().map(urlMapper::toResponse).toList();
     }
 }
