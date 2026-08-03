@@ -13,4 +13,6 @@ public interface UrlService {
     UrlResponseDTO getUrl(Long id);
 
     UrlResponseDTO updateUrl(Long id, UrlRequestDTO request);
+
+    void deleteUrl(Long id);
 }

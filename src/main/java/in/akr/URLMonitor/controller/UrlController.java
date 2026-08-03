@@ -57,4 +57,10 @@ public class UrlController {
     public UrlResponseDTO update(@PathVariable Long id,@Valid @RequestBody UrlRequestDTO dto){
         return urlService.updateUrl(id,dto);
     }
+
+    @DeleteMapping("/delete/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id){
+        urlService.deleteUrl(id);
+    }
 }

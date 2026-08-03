@@ -59,4 +59,12 @@ public class UrlServiceImpl implements UrlService{
 
         return  urlMapper.toResponse(url);
     }
+
+    @Override
+    public void deleteUrl(Long id) {
+        Url url = urlRepository.findById(id).orElseThrow(()->
+                new ResourceNotFoundException("URL not found"));
+
+        urlRepository.delete(url);
+    }
 }
