@@ -52,4 +52,9 @@ public class UrlController {
     public UrlResponseDTO getById(@PathVariable Long id){
         return urlService.getUrl(id);
     }
+
+    @PutMapping("/edit/{id}")
+    public UrlResponseDTO update(@PathVariable Long id,@Valid @RequestBody UrlRequestDTO dto){
+        return urlService.updateUrl(id,dto);
+    }
 }

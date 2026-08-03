@@ -45,4 +45,18 @@ public class UrlServiceImpl implements UrlService{
 
         return urlMapper.toResponse(url);
     }
+
+    @Override
+    public UrlResponseDTO updateUrl(Long id, UrlRequestDTO request) {
+        Url url = urlRepository.findById(id).orElseThrow(()->
+                new ResourceNotFoundException("URL not found"));
+
+        url.setName(request.getName());
+        url.setUrl(request.getUrl());
+        url.setEnabled(request.getEnabled());
+
+        urlRepository.save(url);
+
+        return  urlMapper.toResponse(url);
+    }
 }

@@ -11,4 +11,6 @@ public interface UrlService {
     List<UrlResponseDTO> getAllUrls();
 
     UrlResponseDTO getUrl(Long id);
+
+    UrlResponseDTO updateUrl(Long id, UrlRequestDTO request);
 }
