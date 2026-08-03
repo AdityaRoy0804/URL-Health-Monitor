@@ -47,4 +47,9 @@ public class UrlController {
     public List<UrlResponseDTO> getAll(){
         return urlService.getAllUrls();
     }
+
+    @GetMapping("/view/{id}")
+    public UrlResponseDTO getById(@PathVariable Long id){
+        return urlService.getUrl(id);
+    }
 }

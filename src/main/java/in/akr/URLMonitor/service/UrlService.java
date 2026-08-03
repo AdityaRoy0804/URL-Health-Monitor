@@ -9,4 +9,6 @@ public interface UrlService {
     public UrlResponseDTO createUrl(UrlRequestDTO request);
 
     List<UrlResponseDTO> getAllUrls();
+
+    UrlResponseDTO getUrl(Long id);
 }

@@ -3,6 +3,7 @@ package in.akr.URLMonitor.service;
 import in.akr.URLMonitor.dto.UrlRequestDTO;
 import in.akr.URLMonitor.dto.UrlResponseDTO;
 import in.akr.URLMonitor.entity.Url;
+import in.akr.URLMonitor.exception.ResourceNotFoundException;
 import in.akr.URLMonitor.mapper.UrlMapper;
 import in.akr.URLMonitor.repository.UrlRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,5 +36,13 @@ public class UrlServiceImpl implements UrlService{
     @Override
     public List<UrlResponseDTO> getAllUrls() {
         return urlRepository.findAll().stream().map(urlMapper::toResponse).toList();
+    }
+
+    @Override
+    public UrlResponseDTO getUrl(Long id) {
+        Url url = urlRepository.findById(id).orElseThrow(() ->
+                new ResourceNotFoundException("URL not found"));
+
+        return urlMapper.toResponse(url);
     }
 }
