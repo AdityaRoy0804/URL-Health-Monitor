@@ -2,6 +2,8 @@ package in.akr.URLMonitor.repository;
 
 import in.akr.URLMonitor.entity.HealthRecord;
 import in.akr.URLMonitor.entity.HealthStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface HealthRecordRepository extends JpaRepository<HealthRecord,Long> {
-    List<HealthRecord> findByUrlIdOrderByCheckedAtDesc(Long urlId);
+    Page<HealthRecord> findByUrlIdOrderByCheckedAtDesc(Long urlId, Pageable pageable);
 
     Optional<HealthRecord> findTopByUrlIdOrderByCheckedAtDesc(Long urlId);
 

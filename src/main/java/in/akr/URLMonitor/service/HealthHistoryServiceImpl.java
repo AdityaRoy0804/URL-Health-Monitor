@@ -2,11 +2,16 @@ package in.akr.URLMonitor.service;
 
 import in.akr.URLMonitor.dto.HealthRecordResponseDTO;
 import in.akr.URLMonitor.dto.HealthStatsResponseDTO;
+import in.akr.URLMonitor.dto.PageResponseDTO;
+import in.akr.URLMonitor.entity.HealthRecord;
 import in.akr.URLMonitor.entity.HealthStatus;
 import in.akr.URLMonitor.mapper.HealthRecordMapper;
 import in.akr.URLMonitor.repository.HealthRecordRepository;
 import in.akr.URLMonitor.repository.UrlRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,17 +26,47 @@ public class HealthHistoryServiceImpl implements HealthHistoryService{
     private final HealthRecordMapper healthRecordMapper;
 
     @Override
-    public List<HealthRecordResponseDTO> getHealthHistory(Long urlId) {
-        // First make sure the URL exists
+    public PageResponseDTO<HealthRecordResponseDTO> getHealthHistory(
+            Long urlId,
+            int page,
+            int size) {
+
         if (!urlRepository.existsById(urlId)) {
-            throw new RuntimeException("URL not found with id: " + urlId);
+            throw new RuntimeException(
+                    "URL not found with id: " + urlId
+            );
         }
 
-        return healthRecordRepository
-                .findByUrlIdOrderByCheckedAtDesc(urlId)
-                .stream()
-                .map(healthRecordMapper::toResponse)
-                .toList();
+        Pageable pageable =
+                PageRequest.of(
+                        page,
+                        size
+                );
+
+        Page<HealthRecord> healthRecords =
+                healthRecordRepository
+                        .findByUrlIdOrderByCheckedAtDesc(
+                                urlId,
+                                pageable
+                        );
+
+        List<HealthRecordResponseDTO> content =
+                healthRecords
+                        .getContent()
+                        .stream()
+                        .map(healthRecordMapper::toResponse)
+                        .toList();
+
+        return PageResponseDTO
+                .<HealthRecordResponseDTO>builder()
+                .content(content)
+                .page(healthRecords.getNumber())
+                .size(healthRecords.getSize())
+                .totalElements(healthRecords.getTotalElements())
+                .totalPages(healthRecords.getTotalPages())
+                .first(healthRecords.isFirst())
+                .last(healthRecords.isLast())
+                .build();
     }
 
     @Override
