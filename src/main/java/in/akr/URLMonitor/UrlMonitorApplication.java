@@ -11,5 +11,4 @@ public class UrlMonitorApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(UrlMonitorApplication.class, args);
 	}
-
 }
