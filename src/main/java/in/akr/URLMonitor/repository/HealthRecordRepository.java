@@ -14,6 +14,12 @@ import java.util.Optional;
 public interface HealthRecordRepository extends JpaRepository<HealthRecord,Long> {
     Page<HealthRecord> findByUrlIdOrderByCheckedAtDesc(Long urlId, Pageable pageable);
 
+    Page<HealthRecord> findByUrlIdAndStatusOrderByCheckedAtDesc(
+            Long urlId,
+            HealthStatus status,
+            Pageable pageable
+    );
+
     Optional<HealthRecord> findTopByUrlIdOrderByCheckedAtDesc(Long urlId);
 
     long countByUrlId(Long urlId);

@@ -3,6 +3,7 @@ package in.akr.URLMonitor.controller;
 import in.akr.URLMonitor.dto.HealthRecordResponseDTO;
 import in.akr.URLMonitor.dto.HealthStatsResponseDTO;
 import in.akr.URLMonitor.dto.PageResponseDTO;
+import in.akr.URLMonitor.entity.HealthStatus;
 import in.akr.URLMonitor.service.HealthHistoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +22,8 @@ public class HealthHistoryController {
     getHealthHistory(
             @PathVariable Long urlId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) HealthStatus status) {
 
         if (page < 0) {
             throw new IllegalArgumentException(
@@ -39,7 +41,8 @@ public class HealthHistoryController {
                 healthHistoryService.getHealthHistory(
                         urlId,
                         page,
-                        size
+                        size,
+                        status
                 )
         );
     }

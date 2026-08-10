@@ -5,6 +5,7 @@ import in.akr.URLMonitor.dto.HealthStatsResponseDTO;
 import in.akr.URLMonitor.dto.PageResponseDTO;
 import in.akr.URLMonitor.entity.HealthRecord;
 import in.akr.URLMonitor.entity.HealthStatus;
+import in.akr.URLMonitor.exception.ResourceNotFoundException;
 import in.akr.URLMonitor.mapper.HealthRecordMapper;
 import in.akr.URLMonitor.repository.HealthRecordRepository;
 import in.akr.URLMonitor.repository.UrlRepository;
@@ -29,10 +30,11 @@ public class HealthHistoryServiceImpl implements HealthHistoryService{
     public PageResponseDTO<HealthRecordResponseDTO> getHealthHistory(
             Long urlId,
             int page,
-            int size) {
+            int size,
+            HealthStatus status) {
 
         if (!urlRepository.existsById(urlId)) {
-            throw new RuntimeException(
+            throw new ResourceNotFoundException(
                     "URL not found with id: " + urlId
             );
         }
@@ -43,12 +45,27 @@ public class HealthHistoryServiceImpl implements HealthHistoryService{
                         size
                 );
 
-        Page<HealthRecord> healthRecords =
-                healthRecordRepository
-                        .findByUrlIdOrderByCheckedAtDesc(
-                                urlId,
-                                pageable
-                        );
+        Page<HealthRecord> healthRecords;
+
+        if (status == null) {
+
+            healthRecords =
+                    healthRecordRepository
+                            .findByUrlIdOrderByCheckedAtDesc(
+                                    urlId,
+                                    pageable
+                            );
+
+        } else {
+
+            healthRecords =
+                    healthRecordRepository
+                            .findByUrlIdAndStatusOrderByCheckedAtDesc(
+                                    urlId,
+                                    status,
+                                    pageable
+                            );
+        }
 
         List<HealthRecordResponseDTO> content =
                 healthRecords
@@ -73,7 +90,7 @@ public class HealthHistoryServiceImpl implements HealthHistoryService{
     public Optional<HealthRecordResponseDTO> getLatestHealthStatus(Long urlId) {
 
         if (!urlRepository.existsById(urlId)) {
-            throw new RuntimeException("URL not found with id: " + urlId);
+            throw new ResourceNotFoundException("URL not found with id: " + urlId);
         }
 
         return healthRecordRepository
@@ -85,7 +102,7 @@ public class HealthHistoryServiceImpl implements HealthHistoryService{
     public HealthStatsResponseDTO getHealthStatistics(Long urlId) {
 
         if (!urlRepository.existsById(urlId)) {
-            throw new RuntimeException(
+            throw new ResourceNotFoundException(
                     "URL not found with id: " + urlId
             );
         }
