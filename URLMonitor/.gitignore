@@ -37,20 +37,3 @@ src/main/resources/application.properties
 
 ### env file ###
 .env
-
-# Node
-node_modules/
-dist/
-
-# Environment variables
-.env
-.env.*
-
-# IntelliJ
-.idea/
-
-# Spring Boot
-target/
-
-# Logs
-*.log
