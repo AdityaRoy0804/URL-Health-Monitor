@@ -1,15 +1,54 @@
-import { Link } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 
 function Navbar() {
     return (
-        <nav>
-            <Link to="/">URL Monitor</Link>
+        <header className="navbar">
+            <div className="navbar-container">
+                <Link
+                    to="/"
+                    className="navbar-brand"
+                >
+                    <span className="brand-icon">
+                        U
+                    </span>
 
-            <div>
-                <Link to="/">Dashboard</Link>
-                <Link to="/urls">URLs</Link>
+                    <span>
+                        URL Monitor
+                    </span>
+                </Link>
+
+                <nav className="navbar-links">
+                    <NavLink
+                        to="/"
+                        className={({ isActive }) =>
+                            isActive
+                                ? "nav-link active"
+                                : "nav-link"
+                        }
+                    >
+                        Dashboard
+                    </NavLink>
+
+                    <NavLink
+                        to="/urls"
+                        className={({ isActive }) =>
+                            isActive
+                                ? "nav-link active"
+                                : "nav-link"
+                        }
+                    >
+                        URLs
+                    </NavLink>
+                </nav>
+
+                <Link
+                    to="/urls/new"
+                    className="btn btn-primary"
+                >
+                    + Add URL
+                </Link>
             </div>
-        </nav>
+        </header>
     );
 }
 

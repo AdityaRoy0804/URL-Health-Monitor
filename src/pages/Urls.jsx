@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import api from "../services/api";
+
+import Loading from "../components/Loading";
+import ErrorMessage from "../components/ErrorMessage";
 
 function Urls() {
     const [urls, setUrls] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [deletingId, setDeletingId] = useState(null);
-
-    const navigate = useNavigate();
 
     useEffect(() => {
         fetchUrls();
@@ -23,136 +23,137 @@ function Urls() {
 
             setUrls(response.data);
         } catch (err) {
-            console.error("Failed to fetch URLs:", err);
+            console.error(
+                "Failed to fetch URLs:",
+                err
+            );
+
             setError("Failed to load URLs.");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleDelete = async (id) => {
-        const confirmed = window.confirm(
-            "Are you sure you want to delete this URL?"
-        );
-
-        if (!confirmed) {
-            return;
-        }
-
-        try {
-            setDeletingId(id);
-
-            await api.delete(`/delete/${id}`);
-
-            setUrls((currentUrls) =>
-                currentUrls.filter((url) => url.id !== id)
-            );
-        } catch (err) {
-            console.error("Failed to delete URL:", err);
-
-            setError("Failed to delete URL.");
-        } finally {
-            setDeletingId(null);
-        }
-    };
-
     if (loading) {
-        return (
-            <main>
-                <h1>URLs</h1>
-                <p>Loading URLs...</p>
-            </main>
-        );
+        return <Loading />;
     }
 
-    if (error && urls.length === 0) {
+    if (error) {
         return (
-            <main>
-                <h1>URLs</h1>
-
-                <p>{error}</p>
-
-                <button onClick={fetchUrls}>
-                    Try Again
-                </button>
-            </main>
+            <ErrorMessage
+                message={error}
+                onRetry={fetchUrls}
+            />
         );
     }
 
     return (
-        <main>
-            <section>
-                <h1>URLs</h1>
+        <>
+            <div className="page-header">
+                <div>
+                    <h1 className="page-title">
+                        URLs
+                    </h1>
 
-                <Link to="/urls/new">
-                    Add URL
+                    <p className="page-subtitle">
+                        Manage and monitor your
+                        registered endpoints.
+                    </p>
+                </div>
+
+                <Link
+                    to="/urls/new"
+                    className="btn btn-primary"
+                >
+                    + Add URL
                 </Link>
+            </div>
+
+            <section className="card">
+                {urls.length === 0 ? (
+                    <div className="empty-state">
+                        <h2>
+                            No URLs registered
+                        </h2>
+
+                        <p>
+                            Add your first URL to
+                            start monitoring it.
+                        </p>
+
+                        <Link
+                            to="/urls/new"
+                            className="btn btn-primary"
+                        >
+                            Add URL
+                        </Link>
+                    </div>
+                ) : (
+                    <div className="table-wrapper">
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>URL</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {urls.map((url) => (
+                                    <tr key={url.id}>
+                                        <td>
+                                            <p className="url-name">
+                                                {url.name}
+                                            </p>
+                                        </td>
+
+                                        <td>
+                                            <p className="url-address">
+                                                {url.url}
+                                            </p>
+                                        </td>
+
+                                        <td>
+                                            <span
+                                                className={`status-badge ${
+                                                    url.enabled
+                                                        ? "status-up"
+                                                        : "status-disabled"
+                                                }`}
+                                            >
+                                                {url.enabled
+                                                    ? "Enabled"
+                                                    : "Disabled"}
+                                            </span>
+                                        </td>
+
+                                        <td>
+                                            <div className="actions">
+                                                <Link
+                                                    to={`/urls/${url.id}/health`}
+                                                    className="btn btn-secondary"
+                                                >
+                                                    Health
+                                                </Link>
+
+                                                <Link
+                                                    to={`/urls/${url.id}/edit`}
+                                                    className="btn btn-secondary"
+                                                >
+                                                    Edit
+                                                </Link>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </section>
-
-            {error && (
-                <section>
-                    <p>{error}</p>
-                </section>
-            )}
-
-            {urls.length === 0 ? (
-                <section>
-                    <p>No URLs registered yet.</p>
-
-                    <Link to="/urls/new">
-                        Add your first URL
-                    </Link>
-                </section>
-            ) : (
-                <section>
-                    {urls.map((url) => (
-                        <article key={url.id}>
-                            <h2>{url.name}</h2>
-
-                            <p>{url.url}</p>
-
-                            <p>
-                                Status:{" "}
-                                {url.enabled
-                                    ? "Enabled"
-                                    : "Disabled"}
-                            </p>
-
-                            <div>
-                                <Link
-                                    to={`/urls/${url.id}/health`}
-                                >
-                                    View Health
-                                </Link>
-
-                                <button
-                                    onClick={() =>
-                                        navigate(
-                                            `/urls/${url.id}/edit`
-                                        )
-                                    }
-                                >
-                                    Edit
-                                </button>
-
-                                <button
-                                    onClick={() =>
-                                        handleDelete(url.id)
-                                    }
-                                    disabled={
-                                        deletingId === url.id
-                                    }
-                                >
-                                    {deletingId === url.id
-                                        ? "Deleting..."
-                                        : "Delete"}
-                                </button>
-                            </div>
-                        </article>
-                    ))}
-                </section>
-            )}
-        </main>
+        </>
     );
 }
 

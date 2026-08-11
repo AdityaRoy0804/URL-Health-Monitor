@@ -1,20 +1,27 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import {
+    useNavigate,
+    useParams,
+} from "react-router-dom";
+
 import api from "../services/api";
+import Loading from "../components/Loading";
+import ErrorMessage from "../components/ErrorMessage";
 
 function EditUrl() {
     const { id } = useParams();
     const navigate = useNavigate();
 
-    const [formData, setFormData] = useState({
-        name: "",
-        url: "",
-        enabled: true,
-    });
+    const [name, setName] = useState("");
+    const [url, setUrl] = useState("");
+    const [enabled, setEnabled] = useState(true);
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+
     const [error, setError] = useState("");
+    const [saveError, setSaveError] =
+        useState("");
 
     useEffect(() => {
         fetchUrl();
@@ -25,181 +32,184 @@ function EditUrl() {
             setLoading(true);
             setError("");
 
-            const response = await api.get(`/view/${id}`);
+            const response = await api.get(
+                `/view/${id}`
+            );
 
-            setFormData({
-                name: response.data.name ?? "",
-                url: response.data.url ?? "",
-                enabled: response.data.enabled ?? true,
-            });
+            const data = response.data;
+
+            setName(data.name);
+            setUrl(data.url);
+            setEnabled(data.enabled);
         } catch (err) {
-            console.error("Failed to fetch URL:", err);
+            console.error(
+                "Failed to fetch URL:",
+                err
+            );
+
             setError("Failed to load URL.");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleChange = (event) => {
-        const { name, value, type, checked } = event.target;
-
-        setFormData((current) => ({
-            ...current,
-            [name]: type === "checkbox" ? checked : value,
-        }));
-    };
-
     const handleSubmit = async (event) => {
         event.preventDefault();
 
-        setError("");
-
-        if (!formData.name.trim()) {
-            setError("Name is required.");
-            return;
-        }
-
-        if (!formData.url.trim()) {
-            setError("URL is required.");
-            return;
-        }
-
-        if (
-            !formData.url.startsWith("http://") &&
-            !formData.url.startsWith("https://")
-        ) {
-            setError(
-                "URL must start with http:// or https://"
-            );
-            return;
-        }
-
         try {
             setSaving(true);
+            setSaveError("");
 
             await api.put(`/edit/${id}`, {
-                name: formData.name.trim(),
-                url: formData.url.trim(),
-                enabled: formData.enabled,
+                name,
+                url,
+                enabled,
             });
 
             navigate("/urls");
         } catch (err) {
-            console.error("Failed to update URL:", err);
+            console.error(
+                "Failed to update URL:",
+                err
+            );
 
-            if (err.response?.data?.message) {
-                setError(err.response.data.message);
-            } else {
-                setError("Failed to update URL.");
-            }
+            setSaveError(
+                err.response?.data?.message ||
+                    "Failed to update URL."
+            );
         } finally {
             setSaving(false);
         }
     };
 
     if (loading) {
-        return (
-            <main>
-                <h1>Edit URL</h1>
-                <p>Loading URL...</p>
-            </main>
-        );
+        return <Loading />;
     }
 
-    if (error && !formData.name && !formData.url) {
+    if (error) {
         return (
-            <main>
-                <h1>Edit URL</h1>
-
-                <p>{error}</p>
-
-                <button onClick={fetchUrl}>
-                    Try Again
-                </button>
-
-                <button
-                    type="button"
-                    onClick={() => navigate("/urls")}
-                >
-                    Back to URLs
-                </button>
-            </main>
+            <ErrorMessage
+                message={error}
+                onRetry={fetchUrl}
+            />
         );
     }
 
     return (
-        <main>
-            <section>
-                <h1>Edit URL</h1>
-                <p>Update the monitored URL.</p>
-            </section>
-
-            <form onSubmit={handleSubmit}>
+        <>
+            <div className="page-header">
                 <div>
-                    <label htmlFor="name">
-                        Name
-                    </label>
+                    <h1 className="page-title">
+                        Edit URL
+                    </h1>
 
-                    <input
-                        id="name"
-                        name="name"
-                        type="text"
-                        value={formData.name}
-                        onChange={handleChange}
-                    />
+                    <p className="page-subtitle">
+                        Update the configuration of
+                        your monitored endpoint.
+                    </p>
                 </div>
+            </div>
 
-                <div>
-                    <label htmlFor="url">
-                        URL
-                    </label>
+            <section className="card form-card">
+                <form onSubmit={handleSubmit}>
+                    {saveError && (
+                        <div className="form-error">
+                            {saveError}
+                        </div>
+                    )}
 
-                    <input
-                        id="url"
-                        name="url"
-                        type="url"
-                        value={formData.url}
-                        onChange={handleChange}
-                    />
-                </div>
+                    <div className="form-group">
+                        <label
+                            htmlFor="name"
+                            className="form-label"
+                        >
+                            Name
+                        </label>
 
-                <div>
-                    <label>
                         <input
-                            name="enabled"
-                            type="checkbox"
-                            checked={formData.enabled}
-                            onChange={handleChange}
+                            id="name"
+                            type="text"
+                            className="form-input"
+                            value={name}
+                            onChange={(event) =>
+                                setName(
+                                    event.target.value
+                                )
+                            }
+                            required
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label
+                            htmlFor="url"
+                            className="form-label"
+                        >
+                            URL
+                        </label>
+
+                        <input
+                            id="url"
+                            type="url"
+                            className="form-input"
+                            value={url}
+                            onChange={(event) =>
+                                setUrl(
+                                    event.target.value
+                                )
+                            }
+                            required
                         />
 
-                        Enable monitoring
-                    </label>
-                </div>
+                        <p className="form-help">
+                            URL must start with
+                            http:// or https://
+                        </p>
+                    </div>
 
-                {error && (
-                    <p>{error}</p>
-                )}
+                    <div className="form-group">
+                        <label className="form-checkbox">
+                            <input
+                                type="checkbox"
+                                checked={enabled}
+                                onChange={(event) =>
+                                    setEnabled(
+                                        event.target.checked
+                                    )
+                                }
+                            />
 
-                <div>
-                    <button
-                        type="button"
-                        onClick={() => navigate("/urls")}
-                        disabled={saving}
-                    >
-                        Cancel
-                    </button>
+                            <span>
+                                Enable monitoring
+                            </span>
+                        </label>
+                    </div>
 
-                    <button
-                        type="submit"
-                        disabled={saving}
-                    >
-                        {saving
-                            ? "Saving..."
-                            : "Save Changes"}
-                    </button>
-                </div>
-            </form>
-        </main>
+                    <div className="form-actions">
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() =>
+                                navigate("/urls")
+                            }
+                            disabled={saving}
+                        >
+                            Cancel
+                        </button>
+
+                        <button
+                            type="submit"
+                            className="btn btn-primary"
+                            disabled={saving}
+                        >
+                            {saving
+                                ? "Saving..."
+                                : "Save Changes"}
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </>
     );
 }
 

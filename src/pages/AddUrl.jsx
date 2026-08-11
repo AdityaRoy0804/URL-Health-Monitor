@@ -5,147 +5,159 @@ import api from "../services/api";
 function AddUrl() {
     const navigate = useNavigate();
 
-    const [formData, setFormData] = useState({
-        name: "",
-        url: "",
-        enabled: true,
-    });
+    const [name, setName] = useState("");
+    const [url, setUrl] = useState("");
+    const [enabled, setEnabled] = useState(true);
 
-    const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
-
-    const handleChange = (event) => {
-        const { name, value, type, checked } = event.target;
-
-        setFormData((current) => ({
-            ...current,
-            [name]: type === "checkbox" ? checked : value,
-        }));
-    };
+    const [error, setError] = useState("");
 
     const handleSubmit = async (event) => {
         event.preventDefault();
 
-        setError("");
-
-        if (!formData.name.trim()) {
-            setError("Name is required.");
-            return;
-        }
-
-        if (!formData.url.trim()) {
-            setError("URL is required.");
-            return;
-        }
-
-        if (
-            !formData.url.startsWith("http://") &&
-            !formData.url.startsWith("https://")
-        ) {
-            setError("URL must start with http:// or https://");
-            return;
-        }
-
         try {
             setLoading(true);
+            setError("");
 
             await api.post("/new", {
-                name: formData.name.trim(),
-                url: formData.url.trim(),
-                enabled: formData.enabled,
+                name,
+                url,
+                enabled,
             });
 
             navigate("/urls");
         } catch (err) {
-            console.error("Failed to create URL:", err);
+            console.error(
+                "Failed to create URL:",
+                err
+            );
 
-            if (err.response?.data?.message) {
-                setError(err.response.data.message);
-            } else {
-                setError("Failed to register URL.");
-            }
+            setError(
+                err.response?.data?.message ||
+                    "Failed to create URL."
+            );
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <main>
-            <section>
-                <h1>Add URL</h1>
-                <p>Register a new URL to monitor.</p>
-            </section>
-
-            <form onSubmit={handleSubmit}>
+        <>
+            <div className="page-header">
                 <div>
-                    <label htmlFor="name">
-                        Name
-                    </label>
+                    <h1 className="page-title">
+                        Add URL
+                    </h1>
 
-                    <input
-                        id="name"
-                        name="name"
-                        type="text"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="e.g. Google"
-                    />
+                    <p className="page-subtitle">
+                        Register a new endpoint for
+                        health monitoring.
+                    </p>
                 </div>
+            </div>
 
-                <div>
-                    <label htmlFor="url">
-                        URL
-                    </label>
+            <section className="card form-card">
+                <form onSubmit={handleSubmit}>
+                    {error && (
+                        <div className="form-error">
+                            {error}
+                        </div>
+                    )}
 
-                    <input
-                        id="url"
-                        name="url"
-                        type="url"
-                        value={formData.url}
-                        onChange={handleChange}
-                        placeholder="https://example.com"
-                    />
-                </div>
+                    <div className="form-group">
+                        <label
+                            htmlFor="name"
+                            className="form-label"
+                        >
+                            Name
+                        </label>
 
-                <div>
-                    <label>
                         <input
-                            name="enabled"
-                            type="checkbox"
-                            checked={formData.enabled}
-                            onChange={handleChange}
+                            id="name"
+                            type="text"
+                            className="form-input"
+                            placeholder="e.g. Google"
+                            value={name}
+                            onChange={(event) =>
+                                setName(
+                                    event.target.value
+                                )
+                            }
+                            required
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label
+                            htmlFor="url"
+                            className="form-label"
+                        >
+                            URL
+                        </label>
+
+                        <input
+                            id="url"
+                            type="url"
+                            className="form-input"
+                            placeholder="https://example.com"
+                            value={url}
+                            onChange={(event) =>
+                                setUrl(
+                                    event.target.value
+                                )
+                            }
+                            required
                         />
 
-                        Enable monitoring
-                    </label>
-                </div>
+                        <p className="form-help">
+                            URL must start with
+                            http:// or https://
+                        </p>
+                    </div>
 
-                {error && (
-                    <p>
-                        {error}
-                    </p>
-                )}
+                    <div className="form-group">
+                        <label className="form-checkbox">
+                            <input
+                                type="checkbox"
+                                checked={enabled}
+                                onChange={(event) =>
+                                    setEnabled(
+                                        event.target.checked
+                                    )
+                                }
+                            />
 
-                <div>
-                    <button
-                        type="button"
-                        onClick={() => navigate("/urls")}
-                        disabled={loading}
-                    >
-                        Cancel
-                    </button>
+                            <span>
+                                Enable monitoring
+                            </span>
+                        </label>
+                    </div>
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                    >
-                        {loading
-                            ? "Registering..."
-                            : "Register URL"}
-                    </button>
-                </div>
-            </form>
-        </main>
+                    <div className="form-actions">
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() =>
+                                navigate("/urls")
+                            }
+                            disabled={loading}
+                        >
+                            Cancel
+                        </button>
+
+                        <button
+                            type="submit"
+                            className="btn btn-primary"
+                            disabled={loading}
+                        >
+                            {loading
+                                ? "Creating..."
+                                : "Create URL"}
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </>
     );
 }
 

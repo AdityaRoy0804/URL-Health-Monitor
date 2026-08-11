@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
 
+import Loading from "../components/Loading";
+import ErrorMessage from "../components/ErrorMessage";
+
 function Dashboard() {
     const [urls, setUrls] = useState([]);
     const [healthData, setHealthData] = useState({});
@@ -23,28 +26,31 @@ function Dashboard() {
 
             setUrls(urlList);
 
-            const healthRequests = urlList.map(async (url) => {
-                try {
-                    const healthResponse = await api.get(
-                        `/${url.id}/health/latest`
-                    );
+            const healthRequests = urlList.map(
+                async (url) => {
+                    try {
+                        const healthResponse =
+                            await api.get(
+                                `/${url.id}/health/latest`
+                            );
 
-                    return {
-                        id: url.id,
-                        data: healthResponse.data,
-                    };
-                } catch (err) {
-                    console.error(
-                        `Failed to fetch health for URL ${url.id}:`,
-                        err
-                    );
+                        return {
+                            id: url.id,
+                            data: healthResponse.data,
+                        };
+                    } catch (err) {
+                        console.error(
+                            `Failed to fetch health for URL ${url.id}:`,
+                            err
+                        );
 
-                    return {
-                        id: url.id,
-                        data: null,
-                    };
+                        return {
+                            id: url.id,
+                            data: null,
+                        };
+                    }
                 }
-            });
+            );
 
             const healthResults =
                 await Promise.all(healthRequests);
@@ -69,25 +75,15 @@ function Dashboard() {
     };
 
     if (loading) {
-        return (
-            <main>
-                <h1>Dashboard</h1>
-                <p>Loading dashboard...</p>
-            </main>
-        );
+        return <Loading />;
     }
 
     if (error) {
         return (
-            <main>
-                <h1>Dashboard</h1>
-
-                <p>{error}</p>
-
-                <button onClick={fetchDashboard}>
-                    Try Again
-                </button>
-            </main>
+            <ErrorMessage
+                message={error}
+                onRetry={fetchDashboard}
+            />
         );
     }
 
@@ -112,130 +108,230 @@ function Dashboard() {
     ).length;
 
     return (
-        <main>
-            <section>
-                <h1>Dashboard</h1>
-
-                <p>
-                    Monitor the health and performance of
-                    your registered URLs.
-                </p>
-            </section>
-
-            {/* Summary */}
-            <section>
-                <h2>Overview</h2>
-
+        <>
+            {/* Header */}
+            <div className="page-header">
                 <div>
-                    <article>
-                        <h3>Total URLs</h3>
-                        <p>{totalUrls}</p>
-                    </article>
+                    <h1 className="page-title">
+                        Dashboard
+                    </h1>
 
-                    <article>
-                        <h3>Enabled</h3>
-                        <p>{enabledUrls}</p>
-                    </article>
+                    <p className="page-subtitle">
+                        Monitor the health and
+                        performance of your URLs.
+                    </p>
+                </div>
 
-                    <article>
-                        <h3>Disabled</h3>
-                        <p>{disabledUrls}</p>
-                    </article>
+                <Link
+                    to="/urls/new"
+                    className="btn btn-primary"
+                >
+                    + Add URL
+                </Link>
+            </div>
 
-                    <article>
-                        <h3>Healthy</h3>
-                        <p>{healthyUrls}</p>
-                    </article>
+            {/* Overview */}
+            <section>
+                <div className="stats-grid">
+                    <div className="stat-card">
+                        <p className="stat-label">
+                            Total URLs
+                        </p>
 
-                    <article>
-                        <h3>Unhealthy</h3>
-                        <p>{unhealthyUrls}</p>
-                    </article>
+                        <p className="stat-value">
+                            {totalUrls}
+                        </p>
+                    </div>
+
+                    <div className="stat-card">
+                        <p className="stat-label">
+                            Enabled
+                        </p>
+
+                        <p className="stat-value">
+                            {enabledUrls}
+                        </p>
+                    </div>
+
+                    <div className="stat-card">
+                        <p className="stat-label">
+                            Disabled
+                        </p>
+
+                        <p className="stat-value">
+                            {disabledUrls}
+                        </p>
+                    </div>
+
+                    <div className="stat-card">
+                        <p className="stat-label">
+                            Healthy
+                        </p>
+
+                        <p className="stat-value">
+                            {healthyUrls}
+                        </p>
+                    </div>
+
+                    <div className="stat-card">
+                        <p className="stat-label">
+                            Unhealthy
+                        </p>
+
+                        <p className="stat-value">
+                            {unhealthyUrls}
+                        </p>
+                    </div>
                 </div>
             </section>
 
-            {/* URLs */}
-            <section>
-                <div>
-                    <h2>Monitored URLs</h2>
+            {/* Monitored URLs */}
+            <section className="card">
+                <div className="page-header">
+                    <div>
+                        <h2 className="card-title">
+                            Monitored URLs
+                        </h2>
 
-                    <Link to="/urls">
+                        <p className="card-description">
+                            Current status of your
+                            registered endpoints.
+                        </p>
+                    </div>
+
+                    <Link
+                        to="/urls"
+                        className="btn btn-secondary"
+                    >
                         Manage URLs
                     </Link>
                 </div>
 
                 {urls.length === 0 ? (
-                    <div>
+                    <div className="empty-state">
+                        <h2>
+                            No URLs registered
+                        </h2>
+
                         <p>
-                            No URLs are being monitored.
+                            Add your first URL to
+                            start monitoring it.
                         </p>
 
-                        <Link to="/urls/new">
-                            Add your first URL
+                        <Link
+                            to="/urls/new"
+                            className="btn btn-primary"
+                        >
+                            Add URL
                         </Link>
                     </div>
                 ) : (
-                    <div>
-                        {urls.map((url) => {
-                            const health =
-                                healthData[url.id];
+                    <div className="table-wrapper">
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>URL</th>
+                                    <th>Monitoring</th>
+                                    <th>Health</th>
+                                    <th>Response</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
 
-                            return (
-                                <article key={url.id}>
-                                    <div>
-                                        <h3>{url.name}</h3>
+                            <tbody>
+                                {urls.map((url) => {
+                                    const health =
+                                        healthData[
+                                            url.id
+                                        ];
 
-                                        <p>
-                                            {url.url}
-                                        </p>
-                                    </div>
-
-                                    <div>
-                                        <p>
-                                            Monitoring:{" "}
-                                            {url.enabled
-                                                ? "Enabled"
-                                                : "Disabled"}
-                                        </p>
-
-                                        <p>
-                                            Health:{" "}
-                                            {health
-                                                ? health.status
-                                                : "No Data"}
-                                        </p>
-
-                                        {health && (
-                                            <p>
-                                                Response:{" "}
-                                                {
-                                                    health.responseTime
-                                                }{" "}
-                                                ms
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <Link
-                                            to={`/urls/${url.id}/health`}
+                                    return (
+                                        <tr
+                                            key={url.id}
                                         >
-                                            View Health
-                                        </Link>
+                                            <td>
+                                                <p className="url-name">
+                                                    {
+                                                        url.name
+                                                    }
+                                                </p>
+                                            </td>
 
-                                        <Link
-                                            to={`/urls/${url.id}/edit`}
-                                        >
-                                            Edit
-                                        </Link>
-                                    </div>
-                                </article>
-                            );
-                        })}
+                                            <td>
+                                                <p className="url-address">
+                                                    {url.url}
+                                                </p>
+                                            </td>
+
+                                            <td>
+                                                <span
+                                                    className={`status-badge ${
+                                                        url.enabled
+                                                            ? "status-up"
+                                                            : "status-disabled"
+                                                    }`}
+                                                >
+                                                    {url.enabled
+                                                        ? "Enabled"
+                                                        : "Disabled"}
+                                                </span>
+                                            </td>
+
+                                            <td>
+                                                {health ? (
+                                                    <span
+                                                        className={`status-badge ${
+                                                            health.status ===
+                                                            "UP"
+                                                                ? "status-up"
+                                                                : "status-down"
+                                                        }`}
+                                                    >
+                                                        {
+                                                            health.status
+                                                        }
+                                                    </span>
+                                                ) : (
+                                                    <span className="status-badge status-disabled">
+                                                        No Data
+                                                    </span>
+                                                )}
+                                            </td>
+
+                                            <td>
+                                                {health?.responseTime !=
+                                                null
+                                                    ? `${health.responseTime} ms`
+                                                    : "-"}
+                                            </td>
+
+                                            <td>
+                                                <div className="actions">
+                                                    <Link
+                                                        to={`/urls/${url.id}/health`}
+                                                        className="btn btn-secondary"
+                                                    >
+                                                        Health
+                                                    </Link>
+
+                                                    <Link
+                                                        to={`/urls/${url.id}/edit`}
+                                                        className="btn btn-secondary"
+                                                    >
+                                                        Edit
+                                                    </Link>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     </div>
                 )}
             </section>
-        </main>
+        </>
     );
 }
 
