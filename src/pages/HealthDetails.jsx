@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import api from "../services/api";
 
-function UrlHealth() {
+function HealthDetails() {
     const { id } = useParams();
 
     const [latest, setLatest] = useState(null);
@@ -11,6 +11,7 @@ function UrlHealth() {
 
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
+    const [statusFilter, setStatusFilter] = useState("");
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -28,6 +29,9 @@ function UrlHealth() {
                         params: {
                             page,
                             size: 10,
+                            ...(statusFilter && {
+                                status: statusFilter,
+                            }),
                         },
                     }),
                 ]);
@@ -47,7 +51,12 @@ function UrlHealth() {
 
     useEffect(() => {
         fetchHealthData();
-    }, [id, page]);
+    }, [id, page, statusFilter]);
+
+    const handleStatusFilter = (event) => {
+        setStatusFilter(event.target.value);
+        setPage(0);
+    };
 
     if (loading) {
         return (
@@ -85,15 +94,18 @@ function UrlHealth() {
                 {latest ? (
                     <div>
                         <p>
-                            Status: <strong>{latest.status}</strong>
+                            Status:{" "}
+                            <strong>{latest.status}</strong>
                         </p>
 
                         <p>
-                            Status Code: {latest.statusCode}
+                            Status Code:{" "}
+                            {latest.statusCode ?? "-"}
                         </p>
 
                         <p>
-                            Response Time: {latest.responseTime} ms
+                            Response Time:{" "}
+                            {latest.responseTime ?? "-"} ms
                         </p>
 
                         <p>
@@ -168,7 +180,29 @@ function UrlHealth() {
 
             {/* Health History */}
             <section>
-                <h2>Health History</h2>
+                <div>
+                    <h2>Health History</h2>
+
+                    <label>
+                        Filter:{" "}
+                        <select
+                            value={statusFilter}
+                            onChange={handleStatusFilter}
+                        >
+                            <option value="">
+                                All
+                            </option>
+
+                            <option value="UP">
+                                UP
+                            </option>
+
+                            <option value="DOWN">
+                                DOWN
+                            </option>
+                        </select>
+                    </label>
+                </div>
 
                 {history.length === 0 ? (
                     <p>No health records available.</p>
@@ -187,7 +221,9 @@ function UrlHealth() {
                         <tbody>
                             {history.map((record) => (
                                 <tr key={record.id}>
-                                    <td>{record.status}</td>
+                                    <td>
+                                        {record.status}
+                                    </td>
 
                                     <td>
                                         {record.statusCode ?? "-"}
@@ -218,20 +254,27 @@ function UrlHealth() {
                         <button
                             disabled={page === 0}
                             onClick={() =>
-                                setPage((current) => current - 1)
+                                setPage(
+                                    (current) => current - 1
+                                )
                             }
                         >
                             Previous
                         </button>
 
                         <span>
-                            Page {page + 1} of {totalPages}
+                            {" "}
+                            Page {page + 1} of {totalPages}{" "}
                         </span>
 
                         <button
-                            disabled={page >= totalPages - 1}
+                            disabled={
+                                page >= totalPages - 1
+                            }
                             onClick={() =>
-                                setPage((current) => current + 1)
+                                setPage(
+                                    (current) => current + 1
+                                )
                             }
                         >
                             Next
@@ -243,4 +286,4 @@ function UrlHealth() {
     );
 }
 
-export default UrlHealth;
+export default HealthDetails;

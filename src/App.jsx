@@ -4,7 +4,7 @@ import Navbar from "./components/Navbar";
 import Dashboard from "./pages/Dashboard";
 import Urls from "./pages/Urls";
 import AddUrl from "./pages/AddUrl";
-import UrlHealth from "./pages/UrlHealth";
+import HealthDetails from "./pages/HealthDetails";
 
 function App() {
     return (
@@ -15,6 +15,7 @@ function App() {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/urls" element={<Urls />} />
                 <Route path="/urls/new" element={<AddUrl />} />
+
                 <Route
                     path="/urls/:id/health"
                     element={<HealthDetails />}

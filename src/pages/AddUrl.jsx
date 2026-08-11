@@ -5,34 +5,65 @@ import api from "../services/api";
 function AddUrl() {
     const navigate = useNavigate();
 
-    const [name, setName] = useState("");
-    const [url, setUrl] = useState("");
-    const [enabled, setEnabled] = useState(true);
+    const [formData, setFormData] = useState({
+        name: "",
+        url: "",
+        enabled: true,
+    });
 
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    const handleChange = (event) => {
+        const { name, value, type, checked } = event.target;
+
+        setFormData((current) => ({
+            ...current,
+            [name]: type === "checkbox" ? checked : value,
+        }));
+    };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
 
+        setError("");
+
+        if (!formData.name.trim()) {
+            setError("Name is required.");
+            return;
+        }
+
+        if (!formData.url.trim()) {
+            setError("URL is required.");
+            return;
+        }
+
+        if (
+            !formData.url.startsWith("http://") &&
+            !formData.url.startsWith("https://")
+        ) {
+            setError("URL must start with http:// or https://");
+            return;
+        }
+
         try {
             setLoading(true);
-            setError("");
 
             await api.post("/new", {
-                name,
-                url,
-                enabled,
+                name: formData.name.trim(),
+                url: formData.url.trim(),
+                enabled: formData.enabled,
             });
 
             navigate("/urls");
         } catch (err) {
             console.error("Failed to create URL:", err);
 
-            setError(
-                err.response?.data?.message ||
-                "Failed to register URL."
-            );
+            if (err.response?.data?.message) {
+                setError(err.response.data.message);
+            } else {
+                setError("Failed to register URL.");
+            }
         } finally {
             setLoading(false);
         }
@@ -40,9 +71,10 @@ function AddUrl() {
 
     return (
         <main>
-            <h1>Add URL</h1>
-
-            {error && <p>{error}</p>}
+            <section>
+                <h1>Add URL</h1>
+                <p>Register a new URL to monitor.</p>
+            </section>
 
             <form onSubmit={handleSubmit}>
                 <div>
@@ -52,13 +84,11 @@ function AddUrl() {
 
                     <input
                         id="name"
+                        name="name"
                         type="text"
-                        value={name}
-                        onChange={(event) =>
-                            setName(event.target.value)
-                        }
-                        placeholder="Google"
-                        required
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="e.g. Google"
                     />
                 </div>
 
@@ -69,43 +99,51 @@ function AddUrl() {
 
                     <input
                         id="url"
+                        name="url"
                         type="url"
-                        value={url}
-                        onChange={(event) =>
-                            setUrl(event.target.value)
-                        }
-                        placeholder="https://www.google.com"
-                        required
+                        value={formData.url}
+                        onChange={handleChange}
+                        placeholder="https://example.com"
                     />
                 </div>
 
                 <div>
                     <label>
                         <input
+                            name="enabled"
                             type="checkbox"
-                            checked={enabled}
-                            onChange={(event) =>
-                                setEnabled(event.target.checked)
-                            }
+                            checked={formData.enabled}
+                            onChange={handleChange}
                         />
 
-                        Enabled
+                        Enable monitoring
                     </label>
                 </div>
 
-                <button
-                    type="submit"
-                    disabled={loading}
-                >
-                    {loading ? "Adding..." : "Add URL"}
-                </button>
+                {error && (
+                    <p>
+                        {error}
+                    </p>
+                )}
 
-                <button
-                    type="button"
-                    onClick={() => navigate("/urls")}
-                >
-                    Cancel
-                </button>
+                <div>
+                    <button
+                        type="button"
+                        onClick={() => navigate("/urls")}
+                        disabled={loading}
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="submit"
+                        disabled={loading}
+                    >
+                        {loading
+                            ? "Registering..."
+                            : "Register URL"}
+                    </button>
+                </div>
             </form>
         </main>
     );

@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
 
 function Urls() {
     const [urls, setUrls] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [deletingId, setDeletingId] = useState(null);
+
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchUrls();
@@ -27,6 +30,32 @@ function Urls() {
         }
     };
 
+    const handleDelete = async (id) => {
+        const confirmed = window.confirm(
+            "Are you sure you want to delete this URL?"
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            setDeletingId(id);
+
+            await api.delete(`/delete/${id}`);
+
+            setUrls((currentUrls) =>
+                currentUrls.filter((url) => url.id !== id)
+            );
+        } catch (err) {
+            console.error("Failed to delete URL:", err);
+
+            setError("Failed to delete URL.");
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
     if (loading) {
         return (
             <main>
@@ -36,11 +65,13 @@ function Urls() {
         );
     }
 
-    if (error) {
+    if (error && urls.length === 0) {
         return (
             <main>
                 <h1>URLs</h1>
+
                 <p>{error}</p>
+
                 <button onClick={fetchUrls}>
                     Try Again
                 </button>
@@ -57,6 +88,12 @@ function Urls() {
                     Add URL
                 </Link>
             </section>
+
+            {error && (
+                <section>
+                    <p>{error}</p>
+                </section>
+            )}
 
             {urls.length === 0 ? (
                 <section>
@@ -81,11 +118,36 @@ function Urls() {
                                     : "Disabled"}
                             </p>
 
-                            <Link
-                                to={`/urls/${url.id}/health`}
-                            >
-                                View Health
-                            </Link>
+                            <div>
+                                <Link
+                                    to={`/urls/${url.id}/health`}
+                                >
+                                    View Health
+                                </Link>
+
+                                <button
+                                    onClick={() =>
+                                        navigate(
+                                            `/urls/${url.id}/edit`
+                                        )
+                                    }
+                                >
+                                    Edit
+                                </button>
+
+                                <button
+                                    onClick={() =>
+                                        handleDelete(url.id)
+                                    }
+                                    disabled={
+                                        deletingId === url.id
+                                    }
+                                >
+                                    {deletingId === url.id
+                                        ? "Deleting..."
+                                        : "Delete"}
+                                </button>
+                            </div>
                         </article>
                     ))}
                 </section>
