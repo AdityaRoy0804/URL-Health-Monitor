@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import Urls from "./pages/Urls";
 import AddUrl from "./pages/AddUrl";
 import HealthDetails from "./pages/HealthDetails";
+import EditUrl from "./pages/EditUrl";
 
 function App() {
     return (
@@ -19,6 +20,10 @@ function App() {
                 <Route
                     path="/urls/:id/health"
                     element={<HealthDetails />}
+                />
+                <Route
+                    path="/urls/:id/edit"
+                    element={<EditUrl />}
                 />
             </Routes>
         </BrowserRouter>
