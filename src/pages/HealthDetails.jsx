@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
     LineChart,
@@ -28,41 +28,103 @@ function HealthDetails() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    const fetchHealthData = async () => {
+    /*
+     * Fetch health data.
+     *
+     * This function only performs API calls and returns
+     * the result. State updates are handled separately.
+     */
+    const fetchHealthData = useCallback(async () => {
+        const [
+            latestResponse,
+            statsResponse,
+            historyResponse,
+        ] = await Promise.all([
+            api.get(`/${id}/health/latest`),
+
+            api.get(`/${id}/health/stats`),
+
+            api.get(`/${id}/health`, {
+                params: {
+                    page,
+                    size: 10,
+                    ...(statusFilter && {
+                        status: statusFilter,
+                    }),
+                },
+            }),
+        ]);
+
+        return {
+            latest: latestResponse.data,
+            stats: statsResponse.data,
+            history: historyResponse.data.content,
+            totalPages: historyResponse.data.totalPages,
+        };
+    }, [id, page, statusFilter]);
+
+    /*
+     * Load health data whenever URL, page, or filter changes.
+     */
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadHealthData = async () => {
+            try {
+                setLoading(true);
+                setError("");
+
+                const data = await fetchHealthData();
+
+                if (cancelled) {
+                    return;
+                }
+
+                setLatest(data.latest);
+                setStats(data.stats);
+                setHistory(data.history);
+                setTotalPages(data.totalPages);
+            } catch (err) {
+                if (cancelled) {
+                    return;
+                }
+
+                console.error(
+                    "Failed to fetch health data:",
+                    err
+                );
+
+                setError(
+                    "Failed to load health information."
+                );
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        loadHealthData();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [fetchHealthData]);
+
+    /*
+     * Retry handler.
+     */
+    const handleRetry = async () => {
         try {
             setLoading(true);
             setError("");
 
-            const [
-                latestResponse,
-                statsResponse,
-                historyResponse,
-            ] = await Promise.all([
-                api.get(`/${id}/health/latest`),
+            const data = await fetchHealthData();
 
-                api.get(`/${id}/health/stats`),
-
-                api.get(`/${id}/health`, {
-                    params: {
-                        page,
-                        size: 10,
-                        ...(statusFilter && {
-                            status: statusFilter,
-                        }),
-                    },
-                }),
-            ]);
-
-            setLatest(latestResponse.data);
-            setStats(statsResponse.data);
-
-            setHistory(
-                historyResponse.data.content
-            );
-
-            setTotalPages(
-                historyResponse.data.totalPages
-            );
+            setLatest(data.latest);
+            setStats(data.stats);
+            setHistory(data.history);
+            setTotalPages(data.totalPages);
         } catch (err) {
             console.error(
                 "Failed to fetch health data:",
@@ -76,10 +138,6 @@ function HealthDetails() {
             setLoading(false);
         }
     };
-
-    useEffect(() => {
-        fetchHealthData();
-    }, [id, page, statusFilter]);
 
     const handleStatusFilter = (event) => {
         setStatusFilter(event.target.value);
@@ -96,7 +154,7 @@ function HealthDetails() {
         return (
             <ErrorMessage
                 message={error}
-                onRetry={fetchHealthData}
+                onRetry={handleRetry}
             />
         );
     }
@@ -115,7 +173,6 @@ function HealthDetails() {
                 hour: "2-digit",
                 minute: "2-digit",
             }),
-
             responseTime: record.responseTime,
         }));
 
@@ -127,8 +184,7 @@ function HealthDetails() {
         stats?.averageResponseTime ?? 0
     );
 
-    const isHealthy =
-        latest?.status === "UP";
+    const isHealthy = latest?.status === "UP";
 
     return (
         <>
@@ -196,7 +252,7 @@ function HealthDetails() {
                 </div>
             </section>
 
-            {/* Latest Check */}
+            {/* Health Overview */}
 
             <section className="health-grid">
                 <article className="stat-card">
@@ -247,6 +303,7 @@ function HealthDetails() {
 
                     <p className="stat-value">
                         {averageResponse.toFixed(2)}
+
                         <span className="stat-unit">
                             ms
                         </span>
@@ -281,8 +338,7 @@ function HealthDetails() {
                     </p>
 
                     <p className="stat-value value-success">
-                        {stats?.successfulChecks ??
-                            0}
+                        {stats?.successfulChecks ?? 0}
                     </p>
                 </article>
 
@@ -302,8 +358,8 @@ function HealthDetails() {
                     </p>
 
                     <p className="stat-value">
-                        {stats?.minResponseTime ??
-                            "-"}
+                        {stats?.minResponseTime ?? "-"}
+
                         <span className="stat-unit">
                             ms
                         </span>
@@ -316,8 +372,8 @@ function HealthDetails() {
                     </p>
 
                     <p className="stat-value">
-                        {stats?.maxResponseTime ??
-                            "-"}
+                        {stats?.maxResponseTime ?? "-"}
+
                         <span className="stat-unit">
                             ms
                         </span>
@@ -359,8 +415,7 @@ function HealthDetails() {
                             </span>
 
                             <strong>
-                                {latest.statusCode ??
-                                    "-"}
+                                {latest.statusCode ?? "-"}
                             </strong>
                         </div>
 
@@ -370,8 +425,7 @@ function HealthDetails() {
                             </span>
 
                             <strong>
-                                {latest.responseTime ??
-                                    "-"}{" "}
+                                {latest.responseTime ?? "-"}{" "}
                                 ms
                             </strong>
                         </div>
@@ -458,9 +512,7 @@ function HealthDetails() {
                                 />
 
                                 <Tooltip
-                                    formatter={(
-                                        value
-                                    ) => [
+                                    formatter={(value) => [
                                         `${value} ms`,
                                         "Response Time",
                                     ]}
@@ -508,9 +560,7 @@ function HealthDetails() {
                             id="status-filter"
                             className="form-select"
                             value={statusFilter}
-                            onChange={
-                                handleStatusFilter
-                            }
+                            onChange={handleStatusFilter}
                         >
                             <option value="">
                                 All
@@ -544,22 +594,16 @@ function HealthDetails() {
                             <table className="data-table">
                                 <thead>
                                     <tr>
-                                        <th>
-                                            Status
-                                        </th>
-
+                                        <th>Status</th>
                                         <th>
                                             Status Code
                                         </th>
-
                                         <th>
                                             Response
                                         </th>
-
                                         <th>
                                             Checked At
                                         </th>
-
                                         <th>
                                             Error
                                         </th>
@@ -621,16 +665,11 @@ function HealthDetails() {
                             <div className="pagination">
                                 <button
                                     className="btn btn-secondary"
-                                    disabled={
-                                        page === 0
-                                    }
+                                    disabled={page === 0}
                                     onClick={() =>
                                         setPage(
-                                            (
-                                                current
-                                            ) =>
-                                                current -
-                                                1
+                                            (current) =>
+                                                current - 1
                                         )
                                     }
                                 >
@@ -638,9 +677,7 @@ function HealthDetails() {
                                 </button>
 
                                 <span>
-                                    Page{" "}
-                                    {page + 1}{" "}
-                                    of{" "}
+                                    Page {page + 1} of{" "}
                                     {totalPages}
                                 </span>
 
@@ -648,16 +685,12 @@ function HealthDetails() {
                                     className="btn btn-secondary"
                                     disabled={
                                         page >=
-                                        totalPages -
-                                            1
+                                        totalPages - 1
                                     }
                                     onClick={() =>
                                         setPage(
-                                            (
-                                                current
-                                            ) =>
-                                                current +
-                                                1
+                                            (current) =>
+                                                current + 1
                                         )
                                     }
                                 >

@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import api from "../services/api";
 
+import api from "../services/api";
 import Loading from "../components/Loading";
 import ErrorMessage from "../components/ErrorMessage";
 
@@ -11,57 +11,58 @@ function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    useEffect(() => {
-        fetchDashboard();
+    const fetchDashboard = useCallback(async () => {
+        const response = await api.get("/view");
+
+        const urlList = response.data;
+
+        const healthRequests = urlList.map(async (url) => {
+            try {
+                const healthResponse = await api.get(
+                    `/${url.id}/health/latest`
+                );
+
+                return {
+                    id: url.id,
+                    data: healthResponse.data,
+                };
+            } catch (err) {
+                console.error(
+                    `Failed to fetch health for URL ${url.id}:`,
+                    err
+                );
+
+                return {
+                    id: url.id,
+                    data: null,
+                };
+            }
+        });
+
+        const healthResults =
+            await Promise.all(healthRequests);
+
+        const healthMap = {};
+
+        healthResults.forEach((item) => {
+            healthMap[item.id] = item.data;
+        });
+
+        return {
+            urls: urlList,
+            healthData: healthMap,
+        };
     }, []);
 
-    const fetchDashboard = async () => {
+    const loadDashboard = useCallback(async () => {
         try {
             setLoading(true);
             setError("");
 
-            const response = await api.get("/view");
+            const data = await fetchDashboard();
 
-            const urlList = response.data;
-
-            setUrls(urlList);
-
-            const healthRequests = urlList.map(
-                async (url) => {
-                    try {
-                        const healthResponse =
-                            await api.get(
-                                `/${url.id}/health/latest`
-                            );
-
-                        return {
-                            id: url.id,
-                            data: healthResponse.data,
-                        };
-                    } catch (err) {
-                        console.error(
-                            `Failed to fetch health for URL ${url.id}:`,
-                            err
-                        );
-
-                        return {
-                            id: url.id,
-                            data: null,
-                        };
-                    }
-                }
-            );
-
-            const healthResults =
-                await Promise.all(healthRequests);
-
-            const healthMap = {};
-
-            healthResults.forEach((item) => {
-                healthMap[item.id] = item.data;
-            });
-
-            setHealthData(healthMap);
+            setUrls(data.urls);
+            setHealthData(data.healthData);
         } catch (err) {
             console.error(
                 "Failed to load dashboard:",
@@ -72,17 +73,60 @@ function Dashboard() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [fetchDashboard]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const load = async () => {
+            try {
+                setLoading(true);
+                setError("");
+
+                const data = await fetchDashboard();
+
+                if (cancelled) {
+                    return;
+                }
+
+                setUrls(data.urls);
+                setHealthData(data.healthData);
+            } catch (err) {
+                if (cancelled) {
+                    return;
+                }
+
+                console.error(
+                    "Failed to load dashboard:",
+                    err
+                );
+
+                setError("Failed to load dashboard.");
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        load();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [fetchDashboard]);
 
     if (loading) {
-        return <Loading />;
+        return (
+            <Loading message="Loading dashboard..." />
+        );
     }
 
     if (error) {
         return (
             <ErrorMessage
                 message={error}
-                onRetry={fetchDashboard}
+                onRetry={loadDashboard}
             />
         );
     }
@@ -109,7 +153,6 @@ function Dashboard() {
 
     return (
         <>
-            {/* Header */}
             <div className="page-header">
                 <div>
                     <h1 className="page-title">
@@ -117,85 +160,74 @@ function Dashboard() {
                     </h1>
 
                     <p className="page-subtitle">
-                        Monitor the health and
-                        performance of your URLs.
+                        Monitor the health and performance
+                        of your registered URLs.
+                    </p>
+                </div>
+            </div>
+
+            <section className="stats-grid">
+                <div className="stat-card">
+                    <p className="stat-label">
+                        Total URLs
+                    </p>
+
+                    <p className="stat-value">
+                        {totalUrls}
                     </p>
                 </div>
 
-                <Link
-                    to="/urls/new"
-                    className="btn btn-primary"
-                >
-                    + Add URL
-                </Link>
-            </div>
+                <div className="stat-card">
+                    <p className="stat-label">
+                        Enabled
+                    </p>
 
-            {/* Overview */}
-            <section>
-                <div className="stats-grid">
-                    <div className="stat-card">
-                        <p className="stat-label">
-                            Total URLs
-                        </p>
+                    <p className="stat-value">
+                        {enabledUrls}
+                    </p>
+                </div>
 
-                        <p className="stat-value">
-                            {totalUrls}
-                        </p>
-                    </div>
+                <div className="stat-card">
+                    <p className="stat-label">
+                        Disabled
+                    </p>
 
-                    <div className="stat-card">
-                        <p className="stat-label">
-                            Enabled
-                        </p>
+                    <p className="stat-value">
+                        {disabledUrls}
+                    </p>
+                </div>
 
-                        <p className="stat-value">
-                            {enabledUrls}
-                        </p>
-                    </div>
+                <div className="stat-card">
+                    <p className="stat-label">
+                        Healthy
+                    </p>
 
-                    <div className="stat-card">
-                        <p className="stat-label">
-                            Disabled
-                        </p>
+                    <p className="stat-value value-success">
+                        {healthyUrls}
+                    </p>
+                </div>
 
-                        <p className="stat-value">
-                            {disabledUrls}
-                        </p>
-                    </div>
+                <div className="stat-card">
+                    <p className="stat-label">
+                        Unhealthy
+                    </p>
 
-                    <div className="stat-card">
-                        <p className="stat-label">
-                            Healthy
-                        </p>
-
-                        <p className="stat-value">
-                            {healthyUrls}
-                        </p>
-                    </div>
-
-                    <div className="stat-card">
-                        <p className="stat-label">
-                            Unhealthy
-                        </p>
-
-                        <p className="stat-value">
-                            {unhealthyUrls}
-                        </p>
-                    </div>
+                    <p className="stat-value value-danger">
+                        {unhealthyUrls}
+                    </p>
                 </div>
             </section>
 
-            {/* Monitored URLs */}
             <section className="card">
-                <div className="page-header">
+                <div className="section-header">
                     <div>
-                        <h2 className="card-title">
+                        <h2 className="section-title">
                             Monitored URLs
                         </h2>
 
-                        <p className="card-description">
-                            Current status of your
-                            registered endpoints.
+                        <p className="section-subtitle">
+                            Current status of your registered
+                            endpoints.
                         </p>
                     </div>
 
@@ -209,13 +241,13 @@ function Dashboard() {
 
                 {urls.length === 0 ? (
                     <div className="empty-state">
-                        <h2>
+                        <h3>
                             No URLs registered
-                        </h2>
+                        </h3>
 
                         <p>
-                            Add your first URL to
-                            start monitoring it.
+                            Add your first URL to start
+                            monitoring.
                         </p>
 
                         <Link
@@ -242,19 +274,13 @@ function Dashboard() {
                             <tbody>
                                 {urls.map((url) => {
                                     const health =
-                                        healthData[
-                                            url.id
-                                        ];
+                                        healthData[url.id];
 
                                     return (
-                                        <tr
-                                            key={url.id}
-                                        >
+                                        <tr key={url.id}>
                                             <td>
                                                 <p className="url-name">
-                                                    {
-                                                        url.name
-                                                    }
+                                                    {url.name}
                                                 </p>
                                             </td>
 

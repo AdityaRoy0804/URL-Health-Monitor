@@ -1,10 +1,10 @@
-import { NavLink, Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 function Navbar() {
     return (
         <header className="navbar">
             <div className="navbar-container">
-                <Link
+                <NavLink
                     to="/"
                     className="navbar-brand"
                 >
@@ -15,15 +15,15 @@ function Navbar() {
                     <span>
                         URL Monitor
                     </span>
-                </Link>
+                </NavLink>
 
                 <nav className="navbar-links">
                     <NavLink
                         to="/"
                         className={({ isActive }) =>
-                            isActive
-                                ? "nav-link active"
-                                : "nav-link"
+                            `nav-link ${
+                                isActive ? "active" : ""
+                            }`
                         }
                     >
                         Dashboard
@@ -32,21 +32,14 @@ function Navbar() {
                     <NavLink
                         to="/urls"
                         className={({ isActive }) =>
-                            isActive
-                                ? "nav-link active"
-                                : "nav-link"
+                            `nav-link ${
+                                isActive ? "active" : ""
+                            }`
                         }
                     >
                         URLs
                     </NavLink>
                 </nav>
-
-                <Link
-                    to="/urls/new"
-                    className="btn btn-primary"
-                >
-                    + Add URL
-                </Link>
             </div>
         </header>
     );

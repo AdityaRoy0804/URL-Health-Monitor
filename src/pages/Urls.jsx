@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import api from "../services/api";
 
+import api from "../services/api";
 import Loading from "../components/Loading";
 import ErrorMessage from "../components/ErrorMessage";
 
@@ -10,18 +10,75 @@ function Urls() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    useEffect(() => {
-        fetchUrls();
+    /*
+     * Fetch URLs from the backend.
+     *
+     * This function only performs the API request
+     * and returns the data. It does not update state.
+     */
+    const fetchUrls = useCallback(async () => {
+        const response = await api.get("/view");
+
+        return response.data;
     }, []);
 
-    const fetchUrls = async () => {
+    /*
+     * Load URLs when the component mounts.
+     *
+     * State is updated after the asynchronous request
+     * completes, avoiding the set-state-in-effect lint error.
+     */
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadUrls = async () => {
+            try {
+                setLoading(true);
+                setError("");
+
+                const data = await fetchUrls();
+
+                if (cancelled) {
+                    return;
+                }
+
+                setUrls(data);
+            } catch (err) {
+                if (cancelled) {
+                    return;
+                }
+
+                console.error(
+                    "Failed to fetch URLs:",
+                    err
+                );
+
+                setError("Failed to load URLs.");
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        loadUrls();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [fetchUrls]);
+
+    /*
+     * Retry loading URLs.
+     */
+    const handleRetry = async () => {
         try {
             setLoading(true);
             setError("");
 
-            const response = await api.get("/view");
+            const data = await fetchUrls();
 
-            setUrls(response.data);
+            setUrls(data);
         } catch (err) {
             console.error(
                 "Failed to fetch URLs:",
@@ -35,14 +92,16 @@ function Urls() {
     };
 
     if (loading) {
-        return <Loading />;
+        return (
+            <Loading message="Loading URLs..." />
+        );
     }
 
     if (error) {
         return (
             <ErrorMessage
                 message={error}
-                onRetry={fetchUrls}
+                onRetry={handleRetry}
             />
         );
     }
@@ -72,9 +131,9 @@ function Urls() {
             <section className="card">
                 {urls.length === 0 ? (
                     <div className="empty-state">
-                        <h2>
+                        <h3>
                             No URLs registered
-                        </h2>
+                        </h3>
 
                         <p>
                             Add your first URL to
