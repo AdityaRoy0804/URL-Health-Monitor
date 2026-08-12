@@ -1,0 +1,6 @@
+.mvn/
+.git/
+.gitignore
+.env
+.idea/
+*.log
