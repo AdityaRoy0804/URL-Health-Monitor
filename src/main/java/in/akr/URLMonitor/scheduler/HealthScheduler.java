@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 public class HealthScheduler {
     private final HealthCheckService healthCheckService;
 
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRate = 60000)
     public void monitor(){
         log.info("Starting Health Check...");
         healthCheckService.checkAllUrls();
