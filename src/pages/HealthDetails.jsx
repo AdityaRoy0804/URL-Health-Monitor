@@ -69,10 +69,12 @@ function HealthDetails() {
     useEffect(() => {
         let cancelled = false;
 
-        const loadHealthData = async () => {
+        const loadHealthData = async (showLoading = false) => {
             try {
-                setLoading(true);
-                setError("");
+                if (showLoading) {
+                    setLoading(true);
+                    setError("");
+                }
 
                 const data = await fetchHealthData();
 
@@ -84,6 +86,7 @@ function HealthDetails() {
                 setStats(data.stats);
                 setHistory(data.history);
                 setTotalPages(data.totalPages);
+                setError("");
             } catch (err) {
                 if (cancelled) {
                     return;
@@ -98,16 +101,23 @@ function HealthDetails() {
                     "Failed to load health information."
                 );
             } finally {
-                if (!cancelled) {
+                if (showLoading && !cancelled) {
                     setLoading(false);
                 }
             }
         };
 
-        loadHealthData();
+        // Initial load
+        loadHealthData(true);
+
+        // Refresh health data every 5 seconds
+        const intervalId = setInterval(() => {
+            loadHealthData(false);
+        }, 5000);
 
         return () => {
             cancelled = true;
+            clearInterval(intervalId);
         };
     }, [fetchHealthData]);
 

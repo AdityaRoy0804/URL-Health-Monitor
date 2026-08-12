@@ -9,6 +9,7 @@ import Navbar from "./components/Navbar";
 import Dashboard from "./pages/Dashboard";
 import Urls from "./pages/Urls";
 import AddUrl from "./pages/AddUrl";
+import EditUrl from "./pages/EditUrl";
 import HealthDetails from "./pages/HealthDetails";
 
 import "./App.css";
@@ -34,6 +35,11 @@ function App() {
                         <Route
                             path="/urls/new"
                             element={<AddUrl />}
+                        />
+
+                        <Route
+                            path="/urls/:id/edit"
+                            element={<EditUrl />}
                         />
 
                         <Route

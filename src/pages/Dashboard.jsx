@@ -111,8 +111,13 @@ function Dashboard() {
 
         load();
 
+        const interval = setInterval(() => {
+                load();
+            }, 60000);
+
         return () => {
             cancelled = true;
+            clearInterval(interval);
         };
     }, [fetchDashboard]);
 
