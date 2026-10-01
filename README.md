@@ -172,6 +172,3 @@ Covers controller and service layers for both URL management and health-history 
 - Configurable check interval per URL
 - Authentication for multi-user support
 
-## License
-
-MIT (or update to match your preferred license)
